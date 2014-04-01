@@ -527,3 +527,12 @@ function mediaapi_update_resource_data($resource, $field, $value)
 	sql_query("insert into resource_data(resource,resource_type_field,value) values ('$resource','$field','$value')");
 	sql_query("update resource set last_mediaapi_updated='" . date('Y-m-d H:i:s') . "' where ref='" . $resource . "'");
 }
+
+/**
+ * Updates the last updated column of a resource to current timestamp
+ * @param string $ref Resource ref
+ */
+function mediaapi_update_lastupdated_res($ref)
+{
+    sql_query('UPDATE resource SET last_mediaapi_updated="' . gmdate('Y-m-d H:i:s') . '" WHERE ref="' . $ref . '"');
+}

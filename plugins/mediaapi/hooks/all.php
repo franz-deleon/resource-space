@@ -69,6 +69,8 @@ function HookMediaapiAllPost_savealternativefile($alt_ref, $parent_resource)
     } else {
         mediaapi_upsert_derivative_resources($alt_ref, mediaapi_collect_derivative_data());
     }
+    // update the last updated column of the parent resource
+    mediaapi_update_lastupdated_res($parent_resource);
 }
 
 /**

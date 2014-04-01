@@ -130,7 +130,7 @@ function HookMediaapiEditRedirectaftersave()
 {
     $ref = getval('ref', null);
     if ($ref !== null) {
-        sql_query('UPDATE resource SET last_mediaapi_updated="' . gmdate('Y-m-d H:i:s') . '" WHERE ref="' . $ref . '"');
+        mediaapi_update_lastupdated_res($ref);
     }
 
     return false; // explicitly return false to redirect
