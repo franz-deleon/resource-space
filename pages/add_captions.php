@@ -60,8 +60,10 @@ if ($_FILES)
                 	mediaapi_update_related_resource($ref, $new_cap_res);
 
                 	# add to the cc url
-                	$url = $storageurl . substr($path, strpos($path, 'filestore/') + 9);
-                	$resource_type_id = array_search($type, $type_mapping);
+
+                	$storagedirbasename = basename($storagedir);
+                	$url                = rtrim($mediaurl, '/ ') . substr($path, strpos($path, $storagedirbasename) + strlen($storagedirbasename));
+                	$resource_type_id   = array_search($type, $type_mapping);
                 	mediaapi_update_resource_data($ref, $resource_type_id, $url);
 
             		if ($filename!="")

@@ -70,13 +70,14 @@ function mediaapi_upsert_derivative_resources($ref, array $data)
  */
 function mediaapi_generate_derivative_metadata($ref, $derivative_ref = -1)
 {
-    global $storagedir;
+    global $storagedir, $mediadirname;
 
     $file_data     = ($derivative_ref !== -1) ? get_alternative_file($ref, $derivative_ref) : null;
     $res_data      = get_resource_data($ref);
     $dir_file_path = get_resource_path($ref, true, "", false, $res_data['file_extension'], -1, 1, false, "", $derivative_ref);
 
-    $filename_rootpath = trim(str_replace($storagedir, '', $dir_file_path), '/ ');
+    $storagedirbasename = basename($storagedir);
+    $filename_rootpath = $mediadirname . '/' . substr($dir_file_path, strpos($dir_file_path, $storagedirbasename) + strlen($storagedirbasename) + 1);
     $filename  = substr($filename_rootpath, (strrpos($filename_rootpath, '/') + 1));
     $extension = $res_data['file_extension'] ?: substr($filename, (strrpos($filename, '.') + 1));
 

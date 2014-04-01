@@ -13,7 +13,11 @@ $mysql_db = '';
 # Base URL of the installation
 $baseurl = "http://{$_SERVER['HTTP_HOST']}";
 
-$storageurl="http://my.storage.server/filestore";
+$storageurl="http://{$_SERVER['HTTP_HOST']}/filestore";
+$storagedir=realpath(dirname(__FILE__) . "/../filestore");
+
+$mediadirname="rspace";
+$mediaurl="http://stream.media.loc.gov/{$mediadirname}";
 
 # Email settings
 $email_from = '';
