@@ -143,7 +143,7 @@ function updateDerivativeMetadata($r, $altid, $metadataFile, $newDerivativePath)
     $derivativeFieldMap["isDownloadable"] = "is_downloadable";
     $derivativeFieldMap["isStreamable"] = "is_streamable";
     $derivativeFieldMap["isPrimary"] = "is_primary";
-    
+    $derivativeFieldMap["aspectRatio"] = "aspect_ratio";
      $jsonParser = new JsonParser($metadataFile);
      $derivativeArray = $jsonParser->getContentArray();
      $derivativeArray["fileName"] = $filename;
@@ -155,7 +155,7 @@ function updateDerivativeMetadata($r, $altid, $metadataFile, $newDerivativePath)
              $newDerivativeArray[$derivativeFieldMap[$key]]=$value;
          }
      }
-     $ordinal = $newDerivativeArray["ordinal"];
+    
       mediaapi_upsert_derivative_resources($altid, $newDerivativeArray);
       unlink($metadataFile);
      
@@ -282,7 +282,6 @@ function ProcessFolder($folder)
 			{
                     //skip the metadata file
                     if(preg_match('/(.+).json/', $file, $matches)) {
-                       
                         continue;
                   
                        } else if(preg_match('/(.+)(.jpg|.gif)/', $file)) {
@@ -300,7 +299,7 @@ function ProcessFolder($folder)
 				
 				if ($collection==0 && $staticsync_autotheme)
 					{
-                                    echo "SHORTPATH: $shortpath\n";
+                                    //echo "SHORTPATH: $shortpath\n";
 					# Make a new collection for this folder.
 					$e=explode("/",$shortpath);
 					$theme=ucwords($e[0]);
@@ -455,32 +454,31 @@ function ProcessFolder($folder)
 						while (($altfile = readdir($adh)) !== false)
 							{
                                                         if(file_exists($altpath ."/" .$altfile)) {
-							$filetype=filetype($altpath . "/" . $altfile);
-							if (($filetype=="file") && (substr($file,0,1)!=".") && (strtolower($file)!="thumbs.db"))
-								{
-								# Create alternative file
-								global $lang;
-								if(preg_match('/(.+).json/', $altfile, $matches)) {
-                                                                        //echo "metafile: $altfile\n";
+                                                            $filetype=filetype($altpath . "/" . $altfile);
+                                                                if (($filetype=="file") && (substr($file,0,1)!=".") && (strtolower($file)!="thumbs.db"))
+                                                                    {
+                                                                    # Create alternative file
+                                                                    global $lang;
+                                                                    if(preg_match('/(.+).json/', $altfile, $matches)) {
                                                                         continue;
                   
                                                                     }
 								# Find extension
-								$ext=explode(".",$altfile);$ext=$ext[count($ext)-1];
+                                                                    $ext=explode(".",$altfile);$ext=$ext[count($ext)-1];
 								
-								$aref = add_alternative_file($r, $altfile, $altfile, $altfile, $ext, filesize_unlimited($altpath . "/" . $altfile));
+                                                                    $aref = add_alternative_file($r, $altfile, $altfile, $altfile, $ext, filesize_unlimited($altpath . "/" . $altfile));
 								//add_alternative_file($resource,$name,$description="",$file_name="",$file_extension="",$file_size=0,$alt_type='');
-                                                                $path=get_resource_path($r, true, "", true, $ext, -1, 1, false, "", $aref);
+                                                                    $path=get_resource_path($r, true, "", true, $ext, -1, 1, false, "", $aref);
                                                             
-								rename ($altpath . "/" . $altfile,$path); # Move alternative file
-                                                                $derMetadataFile = $altpath ."/". $altfile . ".json";
+                                                                    rename ($altpath . "/" . $altfile,$path); # Move alternative file
+                                                                    $derMetadataFile = $altpath ."/". $altfile . ".json";
                                                                 
-                                                                if(file_exists($derMetadataFile)) {
+                                                                 if(file_exists($derMetadataFile)) {
                                                                     updateDerivativeMetadata($r, $aref, $derMetadataFile, $path);
-                                                                }
+                                                                    }
                                                                 
-							    }
-                                                        }
+                                                                }
+                                                            }
 							}	
 					
 					# Add to collection
@@ -541,11 +539,11 @@ function ProcessFolder($folder)
 				}
 			}	
 		}	
-	
+                } //just added this
                 
-                } 
+            } //if main file exists
                
-       }
+       }//while readdir()
 
 
 # Recurse through the folder structure.

@@ -59,7 +59,6 @@ function writeMetadata($arr, $absoluteFileName) {
 function downloadThumbNail($url,$destinationDir, $uuid) {
    if (filter_var($url, FILTER_VALIDATE_URL) === FALSE) {
        IngestLogger::writeEntry("Not valid URL\t UUID: $uuid\t URL: $url",'Info');
-       //echo "Not valid URL\t UUID: $uuid\t URL: $url\n";
         return;
     }
     
