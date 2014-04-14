@@ -5,18 +5,20 @@
 ###############################
 
 # MySQL database settings
-$mysql_server = '';
-$mysql_username = '';
-$mysql_password = '';
-$mysql_db = '';
+$mysql_server = 'wwc01vlt.loctest.gov';
+$mysql_username = 'rstmaster';
+$mysql_password = 'R3sourceSp!';
+$mysql_db = 'resourcespacetdb';
 
-# Base URL of the installation
-$baseurl = "http://{$_SERVER['HTTP_HOST']}";
+# Base URL of the ResourceSpace installation
+$baseurl = isset($_SERVER['HTTP_HOST']) ? "http://{$_SERVER['HTTP_HOST']}/resourcespace" : "";
 
-$storageurl="http://{$_SERVER['HTTP_HOST']}/filestore";
-$storagedir=realpath(dirname(__FILE__) . "/../filestore");
+# Storage specific settings
+$storageurl = isset($_SERVER['HTTP_HOST']) ? "http://{$_SERVER['HTTP_HOST']}/filestore" : "";
+$storagedir=realpath(dirname(__FILE__) . "/..") . "/filestore";
 
-$mediadirname="rspace";
+# These are mediaapi specific configs
+$mediadirname="resourcespace";
 $mediaurl="http://stream.media.loc.gov/{$mediadirname}";
 
 # Email settings

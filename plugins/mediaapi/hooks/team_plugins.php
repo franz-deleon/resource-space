@@ -120,13 +120,6 @@ function HookMediaapiTeam_pluginsInitialise()
         sql_query("
             INSERT INTO `resource_type_field` (`ref`, `name`, `title`, `type`, `options`, `order_by`, `keywords_index`, `partial_index`, `resource_type`, `resource_column`, `display_field`, `use_for_similar`, `iptc_equiv`, `display_template`, `tab_name`, `required`, `smart_theme_name`, `exiftool_field`, `advanced_search`, `simple_search`, `help_text`, `display_as_dropdown`, `external_user_access`, `autocomplete_macro`, `hide_when_uploading`, `hide_when_restricted`, `value_filter`, `exiftool_filter`, `omit_when_copying`, `tooltip_text`, `regexp_filter`, `sync_field`, `display_condition`)
             VALUES
-            (91, 'aspectratio', 'Aspect ratio', 0, NULL, 110, 0, 0, 0, NULL, 1, 1, NULL, NULL, NULL, 0, NULL, NULL, 1, 0, NULL, 0, 1, NULL, 0, 0, NULL, NULL, 0, NULL, NULL, NULL, NULL)
-            ON DUPLICATE KEY UPDATE
-            `name` = 'aspectratio', `title` = 'Aspect ratio'
-        ");
-        sql_query("
-            INSERT INTO `resource_type_field` (`ref`, `name`, `title`, `type`, `options`, `order_by`, `keywords_index`, `partial_index`, `resource_type`, `resource_column`, `display_field`, `use_for_similar`, `iptc_equiv`, `display_template`, `tab_name`, `required`, `smart_theme_name`, `exiftool_field`, `advanced_search`, `simple_search`, `help_text`, `display_as_dropdown`, `external_user_access`, `autocomplete_macro`, `hide_when_uploading`, `hide_when_restricted`, `value_filter`, `exiftool_filter`, `omit_when_copying`, `tooltip_text`, `regexp_filter`, `sync_field`, `display_condition`)
-            VALUES
             (92, 'canembed', 'Can embed', 3, 'Yes,No', 120, 0, 0, 0, NULL, 1, 1, NULL, NULL, NULL, 0, NULL, NULL, 1, 0, NULL, 0, 1, NULL, 0, 0, NULL, NULL, 0, NULL, NULL, NULL, NULL)
             ON DUPLICATE KEY UPDATE
             `name` = 'canembed', `title` = 'Can embed'
@@ -167,7 +160,9 @@ function HookMediaapiTeam_pluginsInitialise()
 
         // add the captions resource typ
         sql_query("
-            INSERT IGNORE INTO `resource_type` (`ref`, `name`, `allowed_extensions`, `order_by`) VALUE (5, 'Caption', NULL, NULL)
+            INSERT IGNORE INTO `resource_type` (`ref`, `name`, `allowed_extensions`, `order_by`) VALUES
+            (5, 'Caption', NULL, NULL),
+            (6, 'Transcript', NULL, NULL)
         ");
 
      }

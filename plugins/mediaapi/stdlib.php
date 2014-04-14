@@ -537,3 +537,67 @@ function mediaapi_update_lastupdated_res($ref)
 {
     sql_query('UPDATE resource SET last_mediaapi_updated="' . gmdate('Y-m-d H:i:s') . '" WHERE ref="' . $ref . '"');
 }
+
+/**
+ * Retrieve the resource id by looking up name
+ * @param string $name
+ * @return string
+ */
+function mediaapi_get_resource_type_id($name)
+{
+    $result = sql_value('SELECT ref AS value FROM resource_type WHERE name="' . $name . '"', null);
+    return (int) $result;
+}
+
+/**
+ * Delete related resources of this type
+ * @param int $parent
+ * @param int $type
+ */
+function mediaapi_delete_related_resource_of_type($parent, $type)
+{
+    $rel_resources = sql_query('
+        SELECT rl.related FROM resource_related rl
+        INNER JOIN resource r ON rl.related=r.ref
+        WHERE
+            rl.resource="' . $parent . '" AND
+            r.resource_type="' . $type . '"');
+
+    foreach ($rel_resources as $res) {
+        delete_resource($res['related']);
+    }
+}
+
+/**
+ * Extract text content from target file and saves it to target resource field
+ *
+ * @param int    $ref
+ * @param string $file
+ * @param int    $field_id
+ */
+function mediaapi_Insert_extract_text_from_file($ref, $file)
+{
+    global $db, $use_mysqli;
+
+    $content = '';
+    $file_content = trim(file_get_contents($file), " \n\r\t");
+
+    $info = pathinfo($file);
+    switch ($info['extension']) {
+        case 'xml':
+            $file_content = simplexml_load_string($file_content)->body->div->p;
+            foreach ($file_content as $val) {
+                $content .= (string) $val . "\n\r";
+            }
+            break;
+        default:
+            $content = $file_content;
+    }
+
+    $content = (true == $use_mysqli) ? mysqli_real_escape_string($db, $content) : mysql_real_escape_string($content, $db);
+
+    sql_query('
+        INSERT INTO resource_data SET resource="' . $ref . '", resource_type_field=72, value="' . $content . '"
+        ON DUPLICATE KEY UPDATE value="' . $content . '"
+    ');
+}
