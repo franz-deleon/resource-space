@@ -1,6 +1,6 @@
 <?php
 //$RSPACE_HOME="/ingest/resourcespace";
-$RSPACE_HOME="/storage/www/resourcespace";
+$RSPACE_HOME=dirname(__DIR__);
 $RSPACE_CONFIG="{$RSPACE_HOME}/include";
 $IMGHOME="../images";
 include "{$RSPACE_CONFIG}/db.php";

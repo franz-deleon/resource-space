@@ -2,11 +2,11 @@
 /**
  * preprocessing script for RS Static sync
  * it reads content from mediaServices schema using mediaApi
- * and puts physical mediafiles with ther metada in a certain directory structure
+ * and puts physical mediafiles with their metada in a certain directory structure
  * that staticsync script expects
- * 
+ *
  * @author Muhibo Yusuf <myus@loc.gov>
- * 
+ *
  */
 include_once("rspaceapi.php");
 include("classes/FieldMap.php");
@@ -22,7 +22,6 @@ include("classes/IngestLogger.php");
  */
 function getIngestedResources()  {
     $results = sql_query("select r.ref, rd.value from resource r LEFT JOIN resource_data rd on r.ref = rd.resource where rd.resource_type_field = 77");
-
     $map = array();
     foreach ( $results as $result ) {
         $map[$result['value']] = $result['ref'];
@@ -30,7 +29,7 @@ function getIngestedResources()  {
     return $map;
 }
 /**
- * 
+ *
  * @param array Media
  * @return boolean
  */
@@ -42,7 +41,7 @@ function isValid($media) {
 }
 
 /**
- * 
+ *
  * @param type $arr
  * @param type $absoluteFileName
  * Writes json metadata to a file
@@ -54,22 +53,20 @@ function writeMetadata($arr, $absoluteFileName) {
 }
 
 /***
- * 
+ *
  */
 function downloadThumbNail($url,$destinationDir, $uuid) {
    if (filter_var($url, FILTER_VALIDATE_URL) === FALSE) {
        IngestLogger::writeEntry("Not valid URL\t UUID: $uuid\t URL: $url",'Info');
         return;
     }
-    
     $arr = parse_url($url);
     $path_parts = pathinfo($arr["path"]);
     $filename = $uuid. "." . $path_parts["extension"];
    if(remoteFileExists($url)) {
         file_put_contents("$destinationDir/$filename", file_get_contents($url));
-        $content = file_get_contents($url);
-        file_put_contents("$destinationDir/$filename", $content);
-        
+       
+
    }
 }
 
@@ -85,10 +82,11 @@ function arguments($argv) {
       }
     }
   return $_ARG;
-} 
+}
 
 /**
  * 
+ *
  * @param type $url
  * @return boolean
  */
@@ -100,9 +98,9 @@ function remoteFileExists($url) {
     //if request did not fail
     if ($result !== false) {
         //if request was ok, check response code
-        $statusCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);  
+        $statusCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
         if ($statusCode == 200) {
-            $ret = true;   
+            $ret = true;
         }
     }
 
@@ -123,8 +121,8 @@ $args = arguments($argv);
 if(isset($args['reset']) && $args['reset']=='true') {
     $result = sql_query("delete from ingest_tracking where id>1");
    IngestLogger::writeEntry("Resetting the IngestTracking Table",'Info');
-    //system("rm -rf $syncDirectory" . "/*");
-  
+    system("rm -rf $syncDirectory" . "/*");
+
 }
 $existingResources =  getIngestedResources();
 
@@ -132,19 +130,26 @@ $existingResources =  getIngestedResources();
 $ingestTracking = new IngestTracking();
 $lastPageProcessed = $ingestTracking->getLastPageNumberProcessed();
 //$lastPageProcessed = 1734;
+$lastPageProcessed = 1859; // want to process webcasts which have ccUrl
 
   $page = $lastPageProcessed+1;
   $numpages_in_this_run = 0;
   $itemsProcessed = 0;
-  $max_pages = 5;
+  $max_pages = 1;
   do {
-     IngestLogger::writeEntry("processing page $page",'Info');
-     $params = array('page'=>$page);
-     $mediaApiClient = new MediaApiClient($mediaUrl);
-     $mediaArray = json_decode($mediaApiClient->getMedia($params), true);
-     $pageCount =  $mediaApiClient->getPageCount();   
-    foreach ($mediaArray as $media) {
-        if(isValid($media)) {
+      IngestLogger::writeEntry("processing page $page",'Info');
+      $params = array(
+         'page' => $page,
+         //'uuid' => 'EA7526E15DBD0226E0438C93F0280226',
+      );
+      $mediaApiClient = new MediaApiClient($mediaUrl);
+      $mediaArray = json_decode($mediaApiClient->getMedia($params), true);
+      $headers = $mediaApiClient->getHeaders();
+      $mediaArray = empty($headers['item-count']) ? array($mediaArray) : $mediaArray;
+      $pageCount =  $mediaApiClient->getPageCount();
+
+      foreach ($mediaArray as $media) {
+          if (isValid($media)) {
             $uuid = $media['uuid'];
             if(isset($existingResources[$uuid])) {
                 IngestLogger::writeEntry("$uuid already exists in RS skipping..",'Info');
@@ -152,9 +157,9 @@ $lastPageProcessed = $ingestTracking->getLastPageNumberProcessed();
             }
        
         $firstDerivativeFileName =$media["derivatives"][0]["fileName"] . ".". $media["derivatives"][0]["fileExtension"];
-        $fdFullPathName = $SourcemediaFileBaseDir . "/" . $media['derivatives'][0]['filePath'] . "/" . $media["derivatives"][0]["fileName"] . ".". $media["derivatives"][0]["fileExtension"];
+        $fdFullPathName = $sourcemediaFileBaseDir . "/" . $media['derivatives'][0]['filePath'] . "/" . $media["derivatives"][0]["fileName"] . ".". $media["derivatives"][0]["fileExtension"];
         $thumbnailUrl = $media['thumbnailUrl'];
-     
+        $ccUrl = $media['ccUrl'];
         $destinationPath = "$syncDirectory/$uuid";
         //make directory for this media
         if (!is_dir($destinationPath)) {
@@ -167,6 +172,9 @@ $lastPageProcessed = $ingestTracking->getLastPageNumberProcessed();
     
         if(!empty($thumbnailUrl)) {
             downloadThumbNail($thumbnailUrl,$destinationPath, $uuid);
+        }
+        if(!empty($ccUrl)) {
+            downloadThumbNail($ccUrl, $destinationPath, $uuid);
         }
      
         //copy main derivative
@@ -183,32 +191,54 @@ $lastPageProcessed = $ingestTracking->getLastPageNumberProcessed();
         $derivativeDir = $destinationPath . "/" . $firstDerivativeFileName . "_derivatives";
         if (!is_dir($derivativeDir)) {
             mkdir($derivativeDir, 0777, TRUE);
+        }   
+            
+            $metaDataFile = $destinationPath . "/" . $uuid . ".json";
+            //write metadata
+            writeMetadata($media, $metaDataFile);
 
-        } 
-        foreach($media["derivatives"] as $derivative) {
-            $sourceDerivative = $SourcemediaFileBaseDir . "/" .$derivative["filePath"] . "/" . $derivative["fileName"] . "." . $derivative["fileExtension"];
-            $destinationDerivative = $derivativeDir . "/" . $derivative['fileName'] . "." . $derivative['fileExtension'];
-            if(file_exists($sourceDerivative)) {
-                $derivativeMetataFile = $destinationDerivative . ".json";
-                copy($sourceDerivative, $destinationDerivative);
-                writeMetadata($derivative, $derivativeMetataFile);
+            if(!empty($thumbnailUrl)) {
+                downloadThumbNail($thumbnailUrl,$destinationPath, $uuid);
+            }
+
+            //copy main derivative
+            if(file_exists($fdFullPathName)) {
+                copy($fdFullPathName, $destinationPath . "/$firstDerivativeFileName");
+                //get thumbnail
+
             } else {
-                IngestLogger::writeEntry("Derivative: $sourceDerivative doesn't exist skipping",'Info');
+                IngestLogger::writeEntry("file: $fdFullPathName doesn't exist skipping",'data');
                 continue;
             }
+            $itemsProcessed++;
+            //copy all derivatives to the alternativeFile directory
+            $derivativeDir = $destinationPath . "/" . $firstDerivativeFileName . "_derivatives";
+            if (!is_dir($derivativeDir)) {
+                mkdir($derivativeDir, 0777, TRUE);
+
+            }
+            foreach($media["derivatives"] as $derivative) {
+                $sourceDerivative = $sourcemediaFileBaseDir . "/" .$derivative["filePath"] . "/" . $derivative["fileName"] . "." . $derivative["fileExtension"];
+                $destinationDerivative = $derivativeDir . "/" . $derivative['fileName'] . "." . $derivative['fileExtension'];
+                if (file_exists($sourceDerivative)) {
+                    $derivativeMetataFile = $destinationDerivative . ".json";
+                    copy($sourceDerivative, $destinationDerivative);
+                    writeMetadata($derivative, $derivativeMetataFile);
+                } else {
+                    IngestLogger::writeEntry("Derivative: $sourceDerivative doesn't exist skipping",'Info');
+                    continue;
+                }
+            }
+           
         }
-    }
   }
-  
+
   $data["last_page_number_processed"] = $page;
   $data["total_number_of_records_processed"] = $itemsProcessed;
   $page++;
   $numpages_in_this_run++;
-  
+
   } while ($page<=$pageCount && $numpages_in_this_run<$max_pages);
-   
+
   $ingestTracking->writeData($data);
   IngestLogger::writeEntry("DONE: Processed $itemsProcessed",'Info');
-  
-        
-

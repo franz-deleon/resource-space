@@ -7,8 +7,36 @@
 # All custom settings should be entered in this file.
 # Options may be copied from config.default.php and configured here.
 
-if (file_exists(__DIR__ . '/config.global.php')) require 'config.global.php';
-if (file_exists(__DIR__ . '/config.local.php')) require 'config.local.php';
+# MySQL database settings
+$mysql_server = 'wwc01vlt.loctest.gov';
+$mysql_username = 'rstmaster';
+$mysql_password = 'R3sourceSp!';
+$mysql_db = 'resourcespacetdb';
+
+# Base URL of the ResourceSpace installation
+$baseurl = isset($_SERVER['HTTP_HOST']) ? "http://{$_SERVER['HTTP_HOST']}/resourcespace" : "";
+
+# Storage specific settings
+$storageurl = isset($_SERVER['HTTP_HOST']) ? "http://{$_SERVER['HTTP_HOST']}/filestore" : "";
+$storagedir = realpath(dirname(__FILE__) . "/..") . "/filestore";
+
+# These are mediaapi specific configs
+$mediadirname = "resourcespace";
+$mediadomain = "http://stream.media.loc.gov";
+$mediaurl = "{$mediadomain}/{$mediadirname}";
+
+# Email settings
+$email_from = '';
+$email_notify = '';
+
+#static sync
+$syncdir = "/tmp/resourcespace/ingest"; # The sync folder
+$staticsync_alternatives_suffix="_derivatives";
+$staticsync_mapfolders[] = array(
+    "match"=>"/mediaFiles",
+    "field"=>"Restricted",
+    "level"=>2
+);
 
 $spider_password = 'qeMA3E5YraPy';
 $scramble_key = 'nyNeGy8A6uNy';
@@ -110,3 +138,5 @@ $staticsync_prefer_embedded_title = true;
 
 # End of StaticSync settings
 # ------------------------------------------------------------------------------------------------------------------
+
+if (file_exists(__DIR__ . '/config.local.php')) require 'config.local.php';

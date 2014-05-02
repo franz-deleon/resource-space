@@ -1,1 +1,1 @@
- time php /storage/www/resourcespace/LOC/staticIngest.php &> RsIngest.out
+ time php staticIngest.php &> RsIngest.out

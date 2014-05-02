@@ -108,3 +108,10 @@ function HookMediaapiAllAddspecialsearch($search)
         $sql_filter .= " AND (r.last_mediaapi_published = '0000-00-00 00:00:00' OR (r.last_mediaapi_updated != '0000-00-00 00:00:00' AND r.last_mediaapi_updated > r.last_mediaapi_published)) ";
     }
 }
+
+function HookMediaapiAllReplacehomelinknav()
+{
+    global $baseurl, $default_home_page;
+    echo '<li><a href="' . $baseurl . '/pages/upload_csv.php" onClick="return CentralSpaceLoad(this,true);">Upload CSV</a></li>';
+    return false;
+}

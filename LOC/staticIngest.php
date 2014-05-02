@@ -8,6 +8,7 @@ include(dirname(__FILE__) . "/classes/MediaApiClient.php");
 include(dirname(__FILE__) . "/classes/JsonParser.php");
 include(dirname(__FILE__) . "/classes/IngestTracking.php");
 require_once dirname(__FILE__) . "/../plugins/mediaapi/stdlib.php";
+require_once dirname(__FILE__) . "/config/config.php";
 ob_end_clean();
 set_time_limit(60*60*40);
 
@@ -76,6 +77,8 @@ if (isset($staticsync_mapped_category_tree))
          * updates the resource metadata from the json file
          */
 function updateMediaMetadata($r, $filename) {
+     global $sourcemediaFileBaseDir;
+     global $syncDirectory;
     if(!$filename && file_exists($filename)) {echo "file: $filename is empty\n\n"; return;}
         $jsonParser = new JsonParser($filename);
         $mediaArray = $jsonParser->getContentArray();
@@ -99,8 +102,28 @@ function updateMediaMetadata($r, $filename) {
 						
         foreach ($mediaArray as $key=>$value) {
             if(isset($fieldMap[$key])) {
+                 switch (true) {
+                //case 'backgroundUrl':
+                case $key === 'ccUrl' && !empty($mediaArray[$key]):
+                case $key === 'transcriptUrl' && !empty($mediaArray[$key]):
+                    $urlData = parse_url($mediaArray[$key]);
+                   // $processfile = $sourcemediaFileBaseDir . '/webroot' . $urlData['path'];
+                    $processfile = $syncDirectory . "/" . $mediaArray["uuid"] . "/" . $mediaArray["uuid"]. ".xml";
+                   if(file_exists($processfile)) {
+                        transfer_data_urls($r, $key, $processfile);
+                   }
+                    break;
+                //case $key === 'thumbnailUrl':
+                  //
+                  //  
+                  //    
+                  //      
+                  //          update_field($r, 86, $thumbnailFile);
+                  //  break;
+                default:
                 update_field ($r,$fieldMap[$key], $mediaArray[$key]);
-            }
+               }
+         }
         }
         unlink($filename);
 }
@@ -112,7 +135,7 @@ function updateThumb($imageFile, $r)  {
     }
 }
 /**
- * updaes ingestTracking table
+ * updates ingestTracking table
  */
 function updateIngestTracking() {
     $ingestTracking = new IngestTracking();
@@ -144,12 +167,12 @@ function updateDerivativeMetadata($r, $altid, $metadataFile, $newDerivativePath)
     $derivativeFieldMap["isStreamable"] = "is_streamable";
     $derivativeFieldMap["isPrimary"] = "is_primary";
     $derivativeFieldMap["aspectRatio"] = "aspect_ratio";
-     $jsonParser = new JsonParser($metadataFile);
-     $derivativeArray = $jsonParser->getContentArray();
-     $derivativeArray["fileName"] = $filename;
-     $derivativeArray["filePath"] = $dir;
-     $newDerivativeArray = array();
-     foreach ($derivativeArray as $key => $value)
+    $jsonParser = new JsonParser($metadataFile);
+    $derivativeArray = $jsonParser->getContentArray();
+    $derivativeArray["fileName"] = $filename;
+    $derivativeArray["filePath"] = $dir;
+    $newDerivativeArray = array();
+    foreach ($derivativeArray as $key => $value)
      {
          if(isset($derivativeFieldMap[$key])) {
              $newDerivativeArray[$derivativeFieldMap[$key]]=$value;
@@ -161,6 +184,13 @@ function updateDerivativeMetadata($r, $altid, $metadataFile, $newDerivativePath)
      
     
 }
+
+/**
+ * 
+ * @param type $ref
+ * @param type $thumbfile
+ * @return boolean
+ */
 function upload_preview_loc($ref, $thumbfile)
 {
 
@@ -190,6 +220,78 @@ function upload_preview_loc($ref, $thumbfile)
 
         return true;
     }
+    
+/**
+ * 
+ * @global type $storagedir
+ * @global type $mediaurl
+ * @param type $ref
+ * @param type $type
+ * @param type $processfile
+ */
+function transfer_data_urls($ref, $type, $processfile)
+{
+
+    global $storagedir, $mediaurl, $ResourceSpaceUrl;
+
+    $type_mapping = array(
+       86 => 'thumbnailUrl',
+       87 => 'backgroundUrl',
+       88 => 'ccUrl',
+       99 => 'transcriptUrl',
+    );
+
+    $resource_type_field_id = array_search($type, $type_mapping);
+    if ($type == 'backgroundUrl' || $type == 'thumbnailUrl') {
+        $type_search = 'photo';
+    } elseif ($type == 'ccUrl') {
+        $type_search = 'caption';
+    } else {
+        $type_search = $type;
+    }
+    $resource_type_id = mediaapi_get_resource_type_id(str_ireplace('url', '', $type_search));
+
+    $filename = strtolower(str_replace(" ","_",$processfile));
+
+	# Work out extension
+	$extension = explode(".",$filename);
+	$extension = trim(strtolower($extension[count($extension)-1]));
+
+	# Create the resource
+	$new_cap_res=create_resource($resource_type_id);
+
+	# Find the path for this resource.
+	$path = get_resource_path($new_cap_res, true, "", true, $extension, -1, 1, false, "");
+	$title = ($title = getvalescaped('name', null) && !empty($title)) ? $title : "{$type} for resource id: {$ref}";
+
+	update_resource($new_cap_res, $path, $resource_type_id, $title, false, false);
+
+	# update as a related resources
+	if ($type === 'captionUrl' || $type === 'transcriptUrl') {
+	    mediaapi_delete_related_resource_of_type($ref, $resource_type_id);
+	}
+	mediaapi_update_related_resource($ref, $new_cap_res);
+
+	# add to the cc url
+	$storagedirbasename = basename($storagedir);
+	$url = rtrim($ResourceSpaceUrl, '/ ') . substr($path, strpos($path, $storagedirbasename) + strlen($storagedirbasename));
+        
+	if ($filename != "") {
+            
+            $result = copy($processfile, $path);
+            if ($result==false) {
+        	echo "File upload error. Please check the size of the file you are trying to upload.";
+            }
+
+            if ($type === 'captionUrl' || $type === 'transcriptUrl') {
+                mediaapi_insert_extract_text_from_file($new_cap_res, $path); // 72 is extracted_txt
+            }
+	}
+
+	# populate the field data
+	mediaapi_update_resource_data($ref, $resource_type_field_id, $url);
+}
+
 function touch_category_tree_level($path_parts)
 	{
 	# For each level of the mapped category tree field, ensure that the matching path_parts path exists
@@ -249,6 +351,7 @@ function ProcessFolder($folder)
      
         $metadatafile = "";
         $imageFile = "";
+        $ccFile = "";
         
 	while (($file = readdir($dh)) !== false)
 		{
@@ -289,6 +392,9 @@ function ProcessFolder($folder)
                             echo "image is found....****\n";
                             continue;
                             
+                        } else if(preg_match('/(.+)(.xml)/i', $file)) {
+                            $ccFile = $file;
+                            continue;
                         }
 			# Already exists?
 			if (!isset($done[$shortpath]))

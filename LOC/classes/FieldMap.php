@@ -22,18 +22,17 @@ Class FieldMap{
         'isPubished'=>94,
         'mediaType'=>85,
         'createDate'=>12,
-        'date'=>12
-        
-        
+        'date'=>12,
+        'transcriptUrl'=>99,
     );
     private $mediaTypeMap = array(
         'A'=>4,
         'V'=>3,
-       
+
     );
-    
+
     /**
-     * 
+     *
      * @param string $field
      * @return int or null
      */
@@ -45,23 +44,23 @@ Class FieldMap{
         return null;
     }
     /**
-     * 
+     *
      * @return array FieldMap
      */
     public function  getFieldMap() {
         return $this->fieldMap;
-       
+
     }
-    
+
     /**
-     * 
+     *
      * @return array MediaTypeMap
      */
     public function getMediaTypeMap() {
          return $this->mediaTypeMap;
     }
     /**
-     * 
+     *
      * @param type $mediaType
      * @return null
      */
@@ -73,5 +72,5 @@ Class FieldMap{
         }
         return null;
     }
-    
+
 }
